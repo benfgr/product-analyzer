@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List
 import os
 from dotenv import load_dotenv
-from modules.analyzer import AnalyticsEngine
+from app.modules.analyzer import AnalyticsEngine
 
 # Load environment variables
 load_dotenv()
