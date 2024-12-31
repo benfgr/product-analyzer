@@ -25,7 +25,8 @@ const App = () => {
 
     try {
       const endpoint = useNewEndpoint ? 'analyze-dynamic' : 'analyze';
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+      // const response = await fetch(`http://localhost:8000/${endpoint}`, {
+        const response = await fetch(`https://product-analyzer-ctwo.onrender.com/${endpoint}`, { 
         method: 'POST',
         body: formData
       });
