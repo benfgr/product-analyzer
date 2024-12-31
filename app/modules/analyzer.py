@@ -10,6 +10,9 @@ import json
 class AnalyticsEngine:
     def __init__(self):
         openai.api_key = os.getenv("OPENAI_API_KEY")
+        # Check if the API key was successfully retrieved
+        print(os.getenv("OPENAI_API_KEY"))
+
         
     def analyze_data(self, 
                     df: pd.DataFrame,
@@ -266,7 +269,7 @@ class AnalyticsEngine:
                     'summary': {
                         'count': len(obj),
                         'mean': obj.mean().to_dict() if obj.select_dtypes(include=['number']).columns.any() else None,
-                        'sample': obj.head(5).to_dict(orient='records')  # just first 5 rows as sample
+                        'sample': obj.head(50).to_dict(orient='records')  # just first 50 rows as sample
                     }
                 }
             return obj.to_dict(orient='records')
@@ -278,7 +281,7 @@ class AnalyticsEngine:
                     'summary': {
                         'count': len(obj),
                         'mean': obj.mean() if pd.api.types.is_numeric_dtype(obj) else None,
-                        'sample': dict(list(obj.items())[:5])  # first 5 items
+                        'sample': dict(list(obj.items())[:50])  # first 50 items
                     }
                 }
             return obj.to_dict()
