@@ -1,0 +1,114 @@
+analysis:
+  system_role: |
+    You are a Product Analytics Expert. You will receive some business context and some product data and return strategic recommendations.
+  
+  user_template: |
+    Instructions:
+    1. Review thoroughly the business context and product analytics data in 'INPUTS'
+    2. Analyze this and provide 3 strategic recommendations.
+    3. Output format should be in a JSON structure provided in 'OUTPUT_STRUCTURE'. Do not include any other fields or analysis in your response.
+    
+    INPUTS:
+    1. Business Context:
+    - Business Model: {business_model}
+    - Value Proposition: {value_proposition}
+    - Target Metrics: {target_metrics}
+    - Revenue Drivers: {revenue_drivers}
+
+    2. Performance Data:
+    - Total Views: {data_summary[metrics][total_views]:,.0f}
+    - Total Clicks: {data_summary[metrics][total_clicks]:,.0f}
+    - Total Revenue: ${data_summary[metrics][total_revenue]:,.2f}
+    - Unique Customers: {data_summary[metrics][unique_customers]}
+    
+    3. Content Distribution:
+    - Widgets: {data_summary[metrics][widget_distribution]}
+    - Layouts: {data_summary[metrics][layout_distribution]}
+
+    OUTPUT_STRUCTURE:
+    {{
+      "recommendations": [
+        {{
+          "recommendation": "First specific, actionable recommendation",
+          "revenue_impact": "Expected revenue impact description",
+          "confidence": 0.95
+        }}}},
+        {{
+          "recommendation": "Second specific, actionable recommendation",
+          "revenue_impact": "Expected revenue impact description",
+          "confidence": 0.85
+        }},
+        {{
+          "recommendation": "Third specific, actionable recommendation",
+          "revenue_impact": "Expected revenue impact description",
+          "confidence": 0.75
+        }}
+      ]
+    }}
+
+dynamic_analysis:
+  schema_understanding:
+    system_role: |
+      You are a data analysis expert. Given a dataset and business context,
+      provide a Python analysis strategy using pandas. Focus on metrics relevant
+      to the business goals.
+    
+    user_template: |
+      Analyze this data structure and provide an analysis strategy.
+      
+      Business Context:
+      - Business Model: {business_model}
+      - Value Proposition: {value_proposition}
+      
+      Data Structure:
+      - Columns: {columns}
+      - Sample Data: {sample_data}
+      - Total Rows: {total_rows}
+      - Data Types: {data_types}
+      
+      Return a JSON object containing:
+      1. List of relevant metrics to analyze given the business context
+      2. Python code snippets to calculate each metric
+      3. Required aggregations and transformations
+      
+      Format your response as:
+      {{
+        "metrics": [
+          {{
+            "name": "metric_name",
+            "description": "what this metric means",
+            "code": "Python code to calculate it",
+            "relevance": "why this metric matters for the business context"
+          }}
+        ]
+      }}
+
+  recommendations:
+    system_role: |
+      You are a Product Analytics Expert. You will receive some business context and some product analysis data and return strategic recommendations.
+    
+    user_template: |
+      Instructions:
+      1. Review thoroughly the business context and product analytics data in 'INPUTS'
+      2. Analyze this and provide 3 strategic recommendations.
+      3. Output format should be in a JSON structure provided in 'OUTPUT_STRUCTURE'. Sort the recommendations by revenue impact.
+
+      INPUTS
+      1. Business Context:
+      - Business Model: {business_model}
+      - Value Proposition: {value_proposition}
+      
+      2. Analysis Results:
+      {analysis_results}
+      
+      OUTPUT_STRUCTURE
+      Provide 10 strategic recommendations in this format:
+      {{
+        "recommendations": [
+          {{
+            "recommendation": "specific actionable advice",
+            "revenue_impact": "expected impact by $",
+            "confidence": confidence_score
+          }}
+        ]
+      }}
