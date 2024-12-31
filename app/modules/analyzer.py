@@ -97,7 +97,13 @@ class AnalyticsEngine:
         """Dynamic analysis pipeline"""
         try:
             # 1. Get data structure understanding and analysis strategy
-            with open('config/prompts.yaml', 'r') as file:
+
+            # Get directory of current file
+            current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            config_path = os.path.join(current_dir, 'config', 'prompts.yaml')
+
+
+            with open(config_path, 'r') as file:
                 prompts = yaml.safe_load(file)
 
             # Prepare context for first GPT call
