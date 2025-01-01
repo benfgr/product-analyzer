@@ -49,10 +49,12 @@ analysis:
 dynamic_analysis:
   schema_understanding:
     system_role: |
-      You are a data analysis expert. Given a dataset and business context,
-      provide a Python analysis strategy using pandas. Focus on metrics relevant
-      to the business goals.
-    
+      You are a data analysis expert specializing in product analytics. Focus on:
+      1. Exact percentages and numbers from the data
+      2. Specific segment combinations that show high impact
+      3. Direct comparisons between methods/types showing clear performance differences
+      4. Revenue calculations based on actual metrics
+
     user_template: |
       Analyze this data structure and provide an analysis strategy.
       
@@ -66,33 +68,47 @@ dynamic_analysis:
       - Total Rows: {total_rows}
       - Data Types: {data_types}
       
-      Return a JSON object containing:
-      1. List of relevant metrics to analyze given the business context
-      2. Python code snippets to calculate each metric
-      3. Required aggregations and transformations
-      
-      Format your response as:
+      Discovered Patterns:
+      - Key Influential Metrics: {data_patterns[key_metrics]}
+      - Metric Relationships: {data_patterns[relationships][correlations]}
+      - Metric Dependencies: {data_patterns[relationships][dependencies]}
+
+      Return a JSON analysis plan that focuses on key metrics and their relationships:
       {{
         "metrics": [
           {{
             "name": "metric_name",
-            "description": "what this metric means",
+            "importance": "why this metric is key based on discovered patterns",
+            "related_metrics": ["metrics this influences or is influenced by"],
             "code": "Python code to calculate it",
-            "relevance": "why this metric matters for the business context"
+            "business_relevance": "how this impacts business outcomes"
           }}
         ]
       }}
 
   recommendations:
     system_role: |
-      You are a Product Analytics Expert. You will receive some business context and some product analysis data and return strategic recommendations.
-    
+      You are a Product Analytics Expert specializing in data-driven growth strategy and providing recommendations to the product team.
+      Generate recommendations by:
+      1. Focusing on metrics identified as most influential
+      2. Using discovered relationships between metrics
+      3. Considering both direct and indirect effects
+      4. Prioritizing based on statistical evidence
+      5. Suggesting actionable changes with measurable outcomes
+
+      When providing recommendations:
+      1. Be extremely specific with numbers and action items, action items should not be conducting further analysis.
+      2. Focus on direct revenue impact
+      3. Use pattern evidence to justify expected outcomes
+      4. Prioritize high-impact relationships found in the data
+      5. Consider implementation cost vs revenue benefit
+
     user_template: |
       Instructions:
-      1. Review thoroughly the business context and product analytics data in 'INPUTS'
-      2. Analyze this and provide 3 strategic recommendations.
-      3. Output format should be in a JSON structure provided in 'OUTPUT_STRUCTURE'. Sort the recommendations by revenue impact.
-
+      1. Review thoroughly the business context, Analysis Results and Key Patterns Found in 'INPUTS'.
+      2. Generate specific, revenue-focused recommendations based on:
+      3. Output format should be in a JSON structure provided in 'OUTPUT_STRUCTURE'. Generate 10 recommendations, sorted by revenue impact. Include 2 recommendations for low value combinations that should be deprecated.
+      
       INPUTS
       1. Business Context:
       - Business Model: {business_model}
@@ -101,14 +117,36 @@ dynamic_analysis:
       2. Analysis Results:
       {analysis_results}
       
-      OUTPUT_STRUCTURE
-      Provide 10 strategic recommendations in this format:
+      3. Key Patterns Found:
+      - Influential Metrics: {data_patterns[key_metrics]}
+      - Strong Relationships: {data_patterns[relationships]}
+
+      OUTPUT_STRUCTURE:
       {{
         "recommendations": [
           {{
-            "recommendation": "specific actionable advice",
-            "revenue_impact": "expected impact by $",
-            "confidence": confidence_score
+            "recommendation": "Specific action with exact numbers (e.g., 'Increase stories content by 40% for Enterprise customers')",
+            "confidence": 0_to_1_confidence_number_based_on_statistical_evidence
+            "supporting_data": {{
+              "insight": "specific insight based on the data e.g. PageType PDP has the highest CTR but low number of views"
+              "key_metrics": ["specific metrics supporting this and explanation why they are relevant"],
+              "relationships": ["specific relationships found  and explanation how this is relevant to the recommendation"],
+              "statistical_evidence": "Specific numerical evidence from patterns, e.g. PAGE_TYPE has a strong direct impact on views."
+            }},
+            "implementation": [
+              "Specific step with numbers and timeline",
+              "Specific step with exact actions, e.g. increase number of videos to at least 10 on PDP pages for enterprise plans",
+              "Specific step with measurement criteria"
+            ],
+            "revenue_impact": {{
+              "primary_metric": "main revenue metric affected",
+              "revenue_projection": "specific dollar amount based on patterns and how this was calculated",
+            }},
+            "timeframe": "specific weeks/months",
+            "cost_benefit": {{
+              "implementation_cost": "estimated cost in dollars and how this was calculated",
+              "roi_timeline": "weeks/months to positive ROI"
+            }}
           }}
         ]
       }}

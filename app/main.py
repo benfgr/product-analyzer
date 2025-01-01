@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 from typing import List
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from app.modules.analyzer import AnalyticsEngine
+
+# DEBUG: Enhanced environment variable loading
+print("Looking for .env file...")
+env_path = find_dotenv()
+print(f"Found .env at: {env_path}")
 
 # Load environment variables
 load_dotenv()

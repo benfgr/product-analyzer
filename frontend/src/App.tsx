@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
+import { AnalysisResults } from './components/analysis/AnalysisResults';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import { ErrorDisplay } from './components/ui/ErrorDisplay';
 
 const App = () => {
   const [useNewEndpoint, setUseNewEndpoint] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -17,20 +21,34 @@ const App = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    setError(null);
 
     const formData = new FormData(event.currentTarget);
     if (file) {
       formData.append('file', file);
     }
 
+    const API_URL = import.meta.env.MODE === 'production' 
+      ? import.meta.env.VITE_PROD_API_URL
+      : import.meta.env.VITE_DEV_API_URL;
+
     try {
       const endpoint = useNewEndpoint ? 'analyze-dynamic' : 'analyze';
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
-        // const response = await fetch(`https://product-analyzer-ctwo.onrender.com/${endpoint}`, { 
+      // const response = await fetch(`https://product-analyzer-ctwo.onrender.com/${endpoint}`, { 
+      const response = await fetch(`${API_URL}/${endpoint}`, {
         method: 'POST',
         body: formData
       });
+
+      if (!response.ok) {
+        throw new Error(`Analysis failed: ${response.statusText}`);
+      }
+
       const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Analysis failed');
+      }
       
       if (useNewEndpoint) {
         // Handle dynamic analysis response
@@ -45,6 +63,7 @@ const App = () => {
       }
     } catch (error) {
       console.error('Error:', error);
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -144,29 +163,10 @@ const App = () => {
           </button>
         </form>
 
-        {/* Results Section */}
-        {results && (
-          <div className="mt-8 space-y-4">
-            <h2 className="text-xl font-bold">Analysis Results</h2>
-            {results.recommendations.map((rec: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
-                <p className="font-medium">{rec.recommendation}</p>
-                <p className="text-sm text-gray-600 mt-1">Revenue Impact: {rec.revenue_impact}</p>
-                <div className="mt-2 flex items-center">
-                  <div className="flex-grow bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${rec.confidence * 100}%` }}
-                    />
-                  </div>
-                  <span className="ml-2 text-sm text-gray-600">
-                    {(rec.confidence * 100).toFixed(0)}% confidence
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Results Section */}
+      {loading && <LoadingSpinner />}
+      {error && <ErrorDisplay message={error} onRetry={() => setError(null)} />}
+      {results && !loading && !error && <AnalysisResults results={results} />}
       </div>
     </div>
   );
