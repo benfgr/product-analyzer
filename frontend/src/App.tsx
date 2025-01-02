@@ -28,9 +28,9 @@ const App = () => {
       formData.append('file', file);
     }
 
-    const API_URL = import.meta.env.MODE === 'production' 
-      ? import.meta.env.VITE_PROD_API_URL
-      : import.meta.env.VITE_DEV_API_URL;
+    const API_URL = import.meta.env.PROD 
+    ? import.meta.env.VITE_PROD_API_URL 
+    : import.meta.env.VITE_DEV_API_URL;
 
     try {
       const endpoint = useNewEndpoint ? 'analyze-dynamic' : 'analyze';
