@@ -129,18 +129,19 @@ dynamic_analysis:
             "confidence": 0_to_1_confidence_number_based_on_statistical_evidence
             "supporting_data": {{
               "insight": "specific insight based on the data e.g. PageType PDP has the highest CTR but low number of views"
-              "key_metrics": ["specific metrics supporting this and explanation why they are relevant"],
-              "relationships": ["specific relationships found  and explanation how this is relevant to the recommendation"],
+              "key_metrics": ["specific metrics supporting this and detailed yet simple explanation why they are relevant"],
+              "relationships": ["specific relationships found and a detailed yet simple explanation how this is relevant to the recommendation"],
               "statistical_evidence": "Specific numerical evidence from patterns, e.g. PAGE_TYPE has a strong direct impact on views."
             }},
             "implementation": [
               "Specific step with numbers and timeline",
               "Specific step with exact actions, e.g. increase number of videos to at least 10 on PDP pages for enterprise plans",
-              "Specific step with measurement criteria"
+              "Specific step with the exact measurement criteria to determine if this was successful"
             ],
             "revenue_impact": {{
               "primary_metric": "main revenue metric affected",
               "revenue_projection": "specific dollar amount based on patterns and how this was calculated",
+              "calculation": "the full calculation of how the revenue projection was derived"
             }},
             "timeframe": "specific weeks/months",
             "cost_benefit": {{

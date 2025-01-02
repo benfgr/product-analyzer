@@ -7,7 +7,7 @@ interface Recommendation {
   revenue_impact: {
     primary_metric: string;
     revenue_projection: string;
-    confidence: number;
+    calculation: string;
   };
   supporting_data?: {
     key_metrics?: string[];
@@ -107,6 +107,9 @@ export const RecommendationCard: React.FC<{ recommendation: Recommendation }> = 
               </p>
               <p className="text-sm text-blue-800">
                 Revenue: {recommendation.revenue_impact.revenue_projection}
+              </p>
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">Calculation:</span> {recommendation.revenue_impact.calculation}
               </p>
             </div>
           </div>
