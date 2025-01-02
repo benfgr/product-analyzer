@@ -102,7 +102,7 @@ class AnalyticsEngine:
         business_model: str,
         value_proposition: str
     ) -> Dict:
-        """Enhanced dynamic analysis pipeline"""
+        print("Starting analyze_dynamic endpoint")
         try:
             # 1. First detect patterns in the data
             print("\n1. First detect patterns in the data")
