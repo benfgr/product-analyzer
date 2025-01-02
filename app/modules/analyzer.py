@@ -156,6 +156,10 @@ class AnalyticsEngine:
 
             response = self.client.chat.completions.create(**analysis_request)
             analysis_plan = json.loads(response.choices[0].message.content)
+
+            print("\n=== ANALYSIS STRATEGY RESPONSE ===")
+            print(json.dumps(analysis_plan, indent=2))
+            print("\n=== END ANALYSIS STRATEGY RESPONSE ===")
             
             # 5. Execute the analysis plan
             print("\n5. Execute the analysis plan")            
@@ -331,7 +335,7 @@ class AnalyticsEngine:
             # Standardize column names to uppercase for consistency
             df.columns = df.columns.str.upper()
 
-            print("\nAvailable columns:", df.columns.tolist())
+            print("\nExecuting the analysis plan from GPT. Available columns:", df.columns.tolist())
             
             for metric in analysis_plan.get('metrics', []):
                 try:

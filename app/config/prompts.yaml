@@ -49,14 +49,15 @@ analysis:
 dynamic_analysis:
   schema_understanding:
     system_role: |
-      You are a data analysis expert specializing in product analytics. Focus on:
+      You are an expert product data analyst specializing in product analytics. Focus on:
       1. Exact percentages and numbers from the data
       2. Specific segment combinations that show high impact
       3. Direct comparisons between methods/types showing clear performance differences
       4. Revenue calculations based on actual metrics
 
     user_template: |
-      Analyze this data structure and provide an analysis strategy.
+      Instructions:
+      1. Analyze this data structure and provide an analysis strategy that you need to recommend actionable insights.
       
       Business Context:
       - Business Model: {business_model}
@@ -67,13 +68,8 @@ dynamic_analysis:
       - Sample Data: {sample_data}
       - Total Rows: {total_rows}
       - Data Types: {data_types}
-      
-      Discovered Patterns:
-      - Key Influential Metrics: {data_patterns[key_metrics]}
-      - Metric Relationships: {data_patterns[relationships][correlations]}
-      - Metric Dependencies: {data_patterns[relationships][dependencies]}
 
-      Return a JSON analysis plan that focuses on key metrics and their relationships:
+      2. Return a JSON analysis plan that focuses on key metrics and their relationships. Include at least 10 relevant metrics on which you'll base your actionable recommendations:
       {{
         "metrics": [
           {{
