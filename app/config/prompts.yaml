@@ -49,38 +49,39 @@ analysis:
 dynamic_analysis:
   schema_understanding:
     system_role: |
-      You are an expert product data analyst specializing in product analytics. Focus on:
-      1. Exact percentages and numbers from the data
-      2. Specific segment combinations that show high impact
-      3. Direct comparisons between methods/types showing clear performance differences
-      4. Revenue calculations based on actual metrics
+      You are an expert product data analyst specializing in product analytics. 
+      You provide the data team with insights, answer business questions and recommend on course of actions based on data and advanced statistical analysis.
+      As input you receive the product's value proposition, business model, analysis goal an a sample data CSV file.
 
     user_template: |
       Instructions:
-      1. Analyze this data structure and provide an analysis strategy that you need to recommend actionable insights.
+      1. Analyze this sample data CSV file and provide an analysis strategy that you would need to recommend actionable insights. 
+      Note the first row is the column headers, the second row is a description of each column and the rest is a small sample from real data. 
       
-      Business Context:
-      - Business Model: {business_model}
-      - Value Proposition: {value_proposition}
-      
-      Data Structure:
-      - Columns: {columns}
-      - Sample Data: {sample_data}
-      - Total Rows: {total_rows}
-      - Data Types: {data_types}
+        INPUTS:
+        1. Business Context:
+          - Business Model: {business_model}
+          - Value Proposition: {value_proposition}
+          - Business Goal: {business_goal}
+        
+        2. Sample Data and Structure:
+          - Sample Data: {sample_data}
+          - Data Types: {data_types}
 
-      2. Return a JSON analysis plan that focuses on key metrics and their relationships. Include at least 10 relevant metrics on which you'll base your actionable recommendations:
-      {{
-        "metrics": [
-          {{
-            "name": "metric_name",
-            "importance": "why this metric is key based on discovered patterns",
-            "related_metrics": ["metrics this influences or is influenced by"],
-            "code": "Python code to calculate it",
-            "business_relevance": "how this impacts business outcomes"
-          }}
-        ]
-      }}
+      2. Return an analysis plan that focuses on key metrics and their relationships. The analysis plan can include (but not limited to) patterns, trends, correlations, co-factors impacting performance results and any other advanced analytics required.
+         Include 25 relevant metrics on which you'll base your actionable recommendations.
+         The analysis plan should be in the following JSON format:
+        {{
+          "metrics": [
+            {{
+              "name": "metric_name",
+              "importance": "why this metric is important",
+              "related_metrics": ["metrics this influences or is influenced by"],
+              "code": "Python code to calculate it"
+              "business_relevance": "how this impacts business outcomes"
+             }}
+           ]
+        }}
 
   recommendations:
     system_role: |
@@ -109,6 +110,7 @@ dynamic_analysis:
       1. Business Context:
       - Business Model: {business_model}
       - Value Proposition: {value_proposition}
+      - Business Goal: {business_goal}
       
       2. Analysis Results:
       {analysis_results}

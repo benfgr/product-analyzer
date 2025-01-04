@@ -79,6 +79,7 @@ def analyze_data_dynamic(
     file: UploadFile = File(...),
     business_model: str = Form(...),
     value_proposition: str = Form(...),
+    business_goal: str = Form(...)
 ):
     try:
         # Read CSV file
@@ -92,7 +93,8 @@ def analyze_data_dynamic(
         result = analyzer.analyze_data_dynamic(
             df=df,
             business_model=business_model,
-            value_proposition=value_proposition
+            value_proposition=value_proposition,
+            business_goal=business_goal
         )
         
         return result

@@ -4,17 +4,35 @@ import { AnalysisResults } from './components/analysis/AnalysisResults';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ErrorDisplay } from './components/ui/ErrorDisplay';
 
+// Predefined business goals to help users
+const BUSINESS_GOAL_EXAMPLES = [
+  "Recommend ways to increase total revenue by optimizing feature combinations",
+  "Identify low-performing features that can be deprecated with minimal revenue impact",
+  "Find the highest-impact opportunities to increase user engagement",
+  "Optimize content strategy to maximize conversion rates",
+  "Determine which user segments offer the highest growth potential"
+];
+
 const App = () => {
   const [useNewEndpoint, setUseNewEndpoint] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showGoalExamples, setShowGoalExamples] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
+    }
+  };
+
+  const handleGoalExample = (goal: string) => {
+    const textarea = document.querySelector('textarea[name="business_goal"]') as HTMLTextAreaElement;
+    if (textarea) {
+      textarea.value = goal;
+      setShowGoalExamples(false);
     }
   };
 
@@ -113,26 +131,39 @@ const App = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Target Metrics</label>
-            <input
-              type="text"
-              name="target_metrics"
+          <div className="relative">
+            <label className="block text-sm font-medium mb-2">Analysis Business Goal</label>
+            <textarea
+              name="business_goal"
               className="w-full p-3 border rounded-lg"
-              placeholder="e.g., daily_active_users,feature_usage_rate"
+              rows={3}
+              placeholder="What specific business outcome are you trying to achieve?"
               required
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Revenue Drivers</label>
-            <input
-              type="text"
-              name="revenue_drivers"
-              className="w-full p-3 border rounded-lg"
-              placeholder="e.g., user_adoption,upgrade_rate"
-              required
-            />
+            <button
+              type="button"
+              onClick={() => setShowGoalExamples(!showGoalExamples)}
+              className="text-sm text-blue-600 hover:text-blue-800 mt-1"
+            >
+              {showGoalExamples ? 'Hide examples' : 'See examples'}
+            </button>
+            
+            {showGoalExamples && (
+              <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg p-4">
+                <h4 className="font-medium mb-2">Example Business Goals:</h4>
+                <ul className="space-y-2">
+                  {BUSINESS_GOAL_EXAMPLES.map((goal, index) => (
+                    <li 
+                      key={index}
+                      onClick={() => handleGoalExample(goal)}
+                      className="cursor-pointer hover:bg-gray-100 p-2 rounded text-sm"
+                    >
+                      {goal}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div>
