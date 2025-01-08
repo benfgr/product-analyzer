@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -79,7 +80,8 @@ def analyze_data_dynamic(
     file: UploadFile = File(...),
     business_model: str = Form(...),
     value_proposition: str = Form(...),
-    business_goal: str = Form(...)
+    business_goal: Optional[str] = Form(None),
+    questions: Optional[str] = Form(None)
 ):
     try:
         # Read CSV file
@@ -94,7 +96,8 @@ def analyze_data_dynamic(
             df=df,
             business_model=business_model,
             value_proposition=value_proposition,
-            business_goal=business_goal
+            business_goal=business_goal,
+            questions=questions
         )
         
         return result

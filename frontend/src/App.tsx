@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
+import QuestionsInput from './components/QuestionsInput';
 import { AnalysisResults } from './components/analysis/AnalysisResults';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ErrorDisplay } from './components/ui/ErrorDisplay';
@@ -14,13 +15,14 @@ const BUSINESS_GOAL_EXAMPLES = [
 ];
 
 const App = () => {
-  const [useNewEndpoint, setUseNewEndpoint] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [showGoalExamples, setShowGoalExamples] = useState(false);
-
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [analysisMode, setAnalysisMode] = useState<'goal' | 'questions'>('goal');
+  
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
@@ -36,14 +38,22 @@ const App = () => {
     }
   };
 
+  // Add questions to form data if any exist
+  //const nonEmptyQuestions = questions.filter(q => q.trim());
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
 
     const formData = new FormData(event.currentTarget);
+
     if (file) {
       formData.append('file', file);
+    }
+
+    if (analysisMode === 'questions' && questions.length > 0) {
+      formData.append('questions', JSON.stringify(questions));
     }
 
     const API_URL = import.meta.env.PROD 
@@ -51,9 +61,7 @@ const App = () => {
     : import.meta.env.VITE_DEV_API_URL;
 
     try {
-      const endpoint = useNewEndpoint ? 'analyze-dynamic' : 'analyze';
-      // const response = await fetch(`https://product-analyzer-ctwo.onrender.com/${endpoint}`, { 
-      const response = await fetch(`${API_URL}/${endpoint}`, {
+      const response = await fetch(`${API_URL}/analyze-dynamic`, {
         method: 'POST',
         body: formData
       });
@@ -72,17 +80,8 @@ const App = () => {
         throw new Error(data.error || 'Analysis failed');
       }
       
-      if (useNewEndpoint) {
-        // Handle dynamic analysis response
-        console.log("Dynamic analysis response:", data);
-        setResults({
-          recommendations: data.data.recommendations,
-          metrics: data.data.analysis
-        });
-      } else {
-        // Handle original endpoint response
-        setResults(data.data);
-      }
+      setResults(data.data);
+      
     } catch (error) {
       console.error('Error:', error);
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
@@ -98,16 +97,6 @@ const App = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
         
           <h1 className="text-3xl font-bold mb-6">Product Analytics Advisor</h1>
-
-          <div className="flex items-center gap-2">
-          <input
-              type="checkbox"
-              checked={useNewEndpoint}
-              onChange={(e) => setUseNewEndpoint(e.target.checked)}
-              className="form-checkbox h-5 w-5 text-blue-600"
-            />
-            <span className="text-sm">Use Dynamic Analysis</span>
-          </div>
         
           <div>
             <label className="block text-sm font-medium mb-2">Value Proposition</label>
@@ -131,40 +120,75 @@ const App = () => {
             />
           </div>
 
-          <div className="relative">
-            <label className="block text-sm font-medium mb-2">Analysis Business Goal</label>
-            <textarea
-              name="business_goal"
-              className="w-full p-3 border rounded-lg"
-              rows={3}
-              placeholder="What specific business outcome are you trying to achieve?"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowGoalExamples(!showGoalExamples)}
-              className="text-sm text-blue-600 hover:text-blue-800 mt-1"
-            >
-              {showGoalExamples ? 'Hide examples' : 'See examples'}
-            </button>
-            
-            {showGoalExamples && (
-              <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg p-4">
-                <h4 className="font-medium mb-2">Example Business Goals:</h4>
-                <ul className="space-y-2">
-                  {BUSINESS_GOAL_EXAMPLES.map((goal, index) => (
-                    <li 
-                      key={index}
-                      onClick={() => handleGoalExample(goal)}
-                      className="cursor-pointer hover:bg-gray-100 p-2 rounded text-sm"
-                    >
-                      {goal}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          <div className="mb-6">
+            <h2 className="text-lg font-medium mb-3">What would you like to do?</h2>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setAnalysisMode('goal')}
+                className={`flex-1 p-4 rounded-lg border-2 ${
+                  analysisMode === 'goal' 
+                    ? 'border-blue-600 bg-blue-50' 
+                    : 'border-gray-200'
+                }`}
+              >
+                Get recommendations for a business goal
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalysisMode('questions')}
+                className={`flex-1 p-4 rounded-lg border-2 ${
+                  analysisMode === 'questions' 
+                    ? 'border-blue-600 bg-blue-50' 
+                    : 'border-gray-200'
+                }`}
+              >
+                Get answers to specific questions
+              </button>
+            </div>
           </div>
+
+          {analysisMode === 'goal' ? (
+            <div>
+              <label className="block text-sm font-medium mb-2">Analysis Business Goal</label>
+              <textarea
+                name="business_goal"
+                className="w-full p-3 border rounded-lg"
+                rows={3}
+                placeholder="What specific business outcome are you trying to achieve?"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowGoalExamples(!showGoalExamples)}
+                className="text-sm text-blue-600 hover:text-blue-800 mt-1"
+              >
+                {showGoalExamples ? 'Hide examples' : 'See examples'}
+              </button>
+              
+              {showGoalExamples && (
+                // Keep existing goals example code unchanged
+                <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg p-4">
+                  <h4 className="font-medium mb-2">Example Business Goals:</h4>
+                  <ul className="space-y-2">
+                    {BUSINESS_GOAL_EXAMPLES.map((goal, index) => (
+                      <li 
+                        key={index}
+                        onClick={() => handleGoalExample(goal)}
+                        className="cursor-pointer hover:bg-gray-100 p-2 rounded text-sm"
+                      >
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <QuestionsInput onChange={setQuestions} />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium mb-2">CSV File</label>
@@ -194,14 +218,16 @@ const App = () => {
             disabled={loading || !file}
             className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Analyzing...' : 'Analyze Data'}
+            {loading ? 'Analyzing...' : `Get ${analysisMode === 'goal' ? 'Recommendations' : 'Answers'}`}
           </button>
         </form>
 
       {/* Results Section */}
       {loading && <LoadingSpinner />}
       {error && <ErrorDisplay message={error} onRetry={() => setError(null)} />}
-      {results && !loading && !error && <AnalysisResults results={results} />}
+      {results && !loading && !error && (
+        <AnalysisResults results={results} />
+      )}
       </div>
     </div>
   );

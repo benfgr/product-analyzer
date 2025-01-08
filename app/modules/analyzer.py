@@ -40,24 +40,37 @@ class CodeValidator:
     @classmethod
     def _clean_complex_expressions(cls, code: str) -> str:
         """Clean up complex expressions and add safety handlers"""
+        # Handle groupby operations with type conversion
+        if 'groupby' in code and 'astype' in code:
+            # Pattern: Handle type conversion after groupby aggregation
+            if 'sum()' in code:
+                code = code.replace('.astype(int).sum()', '.sum()')
+            elif 'mean()' in code:
+                code = code.replace('.astype(int).mean()', '.mean()')
+        
+        # Handle division operations with groupby
+        if 'groupby' in code and '/' in code:
+            parts = code.split('=')
+            if len(parts) == 2:
+                var_name = parts[0].strip()
+                expression = parts[1].strip()
+                
+                # If it's a division of two groupby operations
+                if expression.count('groupby') == 2:
+                    numerator = expression.split('/')[0].strip()
+                    denominator = expression.split('/')[1].strip()
+                    code = f"{var_name} = safe_divide({numerator}, {denominator})"
+        
         # Handle media type comparisons
         if 'str.contains' in code and 'WIDGET_MEDIA_TYPES' in code:
             code = code.replace(
                 "df[df['WIDGET_MEDIA_TYPES'].str.contains",
                 "df[safe_contains(df['WIDGET_MEDIA_TYPES']"
             )
-            
+        
         # Handle default values for undefined variables
         if 'conversion_rate_estimate' in code:
             code = 'conversion_rate_estimate = 0.1  # Default conversion rate\n' + code
-            
-        # Handle division operations
-        if '/' in code:
-            parts = code.split('/')
-            if len(parts) == 2:
-                numerator = parts[0].strip()
-                denominator = parts[1].strip()
-                code = f"safe_divide({numerator}, {denominator})"
         
         return code
 
@@ -196,7 +209,8 @@ class AnalyticsEngine:
         df: pd.DataFrame,
         business_model: str,
         value_proposition: str,
-        business_goal: str
+        business_goal: str = None,  # Optional now
+        questions: List[str] = None  # New parameter
     ) -> Dict:
         print("Starting analyze_dynamic endpoint")
         try:
@@ -212,8 +226,8 @@ class AnalyticsEngine:
             with open(config_path, 'r') as file:
                 prompts = yaml.safe_load(file)
 
-            # 3. Create enhanced context for first GPT call
-            print("\n3. Create enhanced context for first GPT call")            
+            # 3. Create enhanced context for analysis plan GPT call
+            print("\n3. Create enhanced context for analysis plan GPT call")            
 
             data_context = {
                 "columns": list(df.columns),
@@ -232,7 +246,7 @@ class AnalyticsEngine:
                 **data_context
             )
 
-            print("\n=== ANALYSIS STRATEGY REQUEST ===")
+            print("\n=== ANALYSIS PLAN REQUEST ===")
             analysis_request = {
                 "model": "gpt-4o",
                 "messages": [
@@ -249,63 +263,125 @@ class AnalyticsEngine:
                 "temperature": 0.5
             }
             print(json.dumps(analysis_request, indent=2))
-            print("=== END ANALYSIS STRATEGY REQUEST ===\n")
+            print("=== END ANALYSIS PLAN REQUEST ===\n")
 
             response = self.client.chat.completions.create(**analysis_request)
             analysis_plan = json.loads(response.choices[0].message.content)
 
-            print("\n=== ANALYSIS STRATEGY RESPONSE ===")
+            print("\n=== ANALYSIS PLAN RESPONSE ===")
             print(json.dumps(analysis_plan, indent=2))
-            print("\n=== END ANALYSIS STRATEGY RESPONSE ===")
+            print("\n=== END ANALYSIS PLAN RESPONSE ===")
             
             # 5. Execute the analysis plan
             print("\n5. Execute the analysis plan")            
             analysis_results = self._execute_analysis_plan(df, analysis_plan)
             
-            # 6. Get recommendations with enhanced context
-            print("\n6. Get recommendations with enhanced context")       
-            print("=== RECOMMENDATION REQUEST ===\n")     
-            recommendations_prompt = prompts['dynamic_analysis']['recommendations']['user_template'].format(
-                business_model=business_model,
-                value_proposition=value_proposition,
-                business_goal=business_goal,
-                analysis_results=json.dumps(analysis_results, indent=2),
-                data_patterns=detected_patterns
-            )
+            # 6. Get recommendations or answers with enhanced context
+            print("\n6. Get recommendations or answers with enhanced context")       
 
-            recommendations_request = {
-                "model": "gpt-4o",
-                "messages": [
-                    {
-                        "role": "system", 
-                        "content": prompts['dynamic_analysis']['recommendations']['system_role']
-                    },
-                    {
-                        "role": "user",
-                        "content": recommendations_prompt
-                    }
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.3
-            }
+            if questions:
+                print("\nExecuting question answering path")
 
-            print(json.dumps(recommendations_request, indent=2))
-            print("=== END RECOMMENDATION REQUEST ===\n")
+                serializable_analysis = self._make_json_serializable(analysis_results)
+                serializable_patterns = self._make_json_serializable(detected_patterns)
 
-            recommendations_response = self.client.chat.completions.create(**recommendations_request)
-            recommendations = json.loads(recommendations_response.choices[0].message.content)
-            print("=== OPENAI RECOMMENDATION RESPONSE ===\n")
-            print(json.dumps(recommendations, indent=2))
-            print("=== END OPENAI RECOMMENDATION RESPONSE ===\n")
+                answers_prompt = prompts['dynamic_analysis']['question_answering']['user_template'].format(
+                    business_model=business_model,
+                    value_proposition=value_proposition,
+                    business_goal="Answer specific questions about the data",
+                    analysis_results=json.dumps(serializable_analysis, indent=2),
+                    data_patterns=serializable_patterns,
+                    questions=json.dumps(questions, indent=2)
+                )
 
-            return {
-                "success": True,
-                "data": {
-                    "analysis": analysis_results,
-                    "patterns": detected_patterns,  # Include patterns in response
-                    "recommendations": recommendations.get('recommendations', [])
+                print(f"\nANSWERS PROMPT:{answers_prompt}\n")     
+                print("=== ANSWERS REQUEST ===\n")     
+
+                answers_request = {
+                    "model": "gpt-4o",
+                    "messages": [
+                        {"role": "system", "content": prompts['dynamic_analysis']['question_answering']['system_role']},
+                        {"role": "user", "content": answers_prompt}
+                    ],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.3
                 }
-            }
+
+                print(json.dumps(answers_request, indent=2))
+                print("=== END ANSWERS REQUEST ===\n")
+                
+                answers_response = self.client.chat.completions.create(**answers_request)
+                answers = json.loads(answers_response.choices[0].message.content)
+                
+                print("=== OPENAI ANSWERS RESPONSE ===\n")
+                print(json.dumps(answers, indent= 2))
+                print("=== END OPENAI ANSWERS RESPONSE ===\n")
+
+                final_response = {
+                    "success": True,
+                    "data": self._make_json_serializable({
+                        "analysis": analysis_results,
+                        "patterns": detected_patterns,
+                        "answers": answers.get('answers', [])
+                    })
+                }
+                print("Final response structure:", final_response)
+                try:
+                    # Test JSON serialization
+                    json_str = json.dumps(final_response)
+                    print("JSON serialization successful")
+                except TypeError as e:
+                    print("JSON serialization failed:", str(e))
+
+                return final_response
+            else:
+                print("\nExecuting recommendations path")
+
+
+                print("=== RECOMMENDATION REQUEST ===\n")     
+                recommendations_prompt = prompts['dynamic_analysis']['recommendations']['user_template'].format(
+                    business_model=business_model,
+                    value_proposition=value_proposition,
+                    business_goal=business_goal,
+                    analysis_results=json.dumps(analysis_results, indent=2),
+                    data_patterns=detected_patterns
+                )
+
+                print(f"\nRECOMMENDATION PROMPT:{recommendations_prompt}\n")     
+
+                recommendations_request = {
+                    "model": "gpt-4o",
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": prompts['dynamic_analysis']['recommendations']['system_role']
+                        },
+                        {
+                            "role": "user",
+                            "content": recommendations_prompt
+                        }
+                    ],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.3
+                }
+
+                print(json.dumps(recommendations_request, indent=2))
+                print("=== END RECOMMENDATION REQUEST ===\n")
+
+                recommendations_response = self.client.chat.completions.create(**recommendations_request)
+                recommendations = json.loads(recommendations_response.choices[0].message.content)
+                print("=== OPENAI RECOMMENDATION RESPONSE ===\n")
+                print(json.dumps(recommendations, indent=2))
+                print("=== END OPENAI RECOMMENDATION RESPONSE ===\n")
+
+                return {
+                    "success": True,
+                    "data": {
+                        "analysis": analysis_results,
+                        "patterns": detected_patterns,  # Include patterns in response
+                        "recommendations": recommendations.get('recommendations', [])
+                    }
+                }
                 
         except Exception as e:
             print(f"Error in dynamic analysis: {e}")
@@ -517,8 +593,8 @@ class AnalyticsEngine:
                 try:
                     print(f"\nAttempting to calculate metric: {metric['name']}")
                     
-                    code = metric['code']
-                    
+                    code = metric['code'].replace('data[', 'df[')                    
+
                     # Replace unsafe operations with safe versions
                     if 'str.contains' in code:
                         code = code.replace('.str.contains', '.pipe(safe_contains')
@@ -687,6 +763,10 @@ class AnalyticsEngine:
 
     def _make_json_serializable(self, obj):
         """Convert objects to JSON serializable format"""
+            # Add debugging
+        if isinstance(obj, (np.int64, np.int32, np.integer)):
+            print(f"Converting numpy int type: {type(obj)}")
+
         if isinstance(obj, pd.DataFrame):
             # If DataFrame is too large, return summary statistics
             if len(obj) > 100:  # arbitrary threshold
@@ -713,6 +793,9 @@ class AnalyticsEngine:
                 }
             return obj.to_dict()
 
+        if isinstance(obj, (np.int64, np.int32)):
+            return int(obj)
+        
         if isinstance(obj, np.integer):
             return int(obj)
 
@@ -721,6 +804,13 @@ class AnalyticsEngine:
 
         if isinstance(obj, np.ndarray):
             return obj.tolist()
+        
+        if isinstance(obj, dict):
+            return {k: self._make_json_serializable(v) for k, v in obj.items()}
+
+        if isinstance(obj, list):
+            return [self._make_json_serializable(v) for v in obj]
+
         return obj
 
     def _prepare_data_summary(self, df: pd.DataFrame) -> Dict:
