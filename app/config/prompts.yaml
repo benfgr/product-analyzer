@@ -51,25 +51,26 @@ dynamic_analysis:
     system_role: |
       You are an expert product data analyst specializing in product analytics. 
       You provide the data team with insights, answer business questions and recommend on course of actions based on data and advanced statistical analysis.
-      As input you receive the product's value proposition, business model, analysis goal an a sample data CSV file.
+      As input you receive a data sample CSV file, the product's value proposition, business model and either the analysis goal or direct questions to answer about data.
 
     user_template: |
       Instructions:
-      1. Analyze this sample data CSV file and provide an analysis strategy that you would need to recommend actionable insights. 
+      1. Analyze this sample data CSV file and provide an analysis strategy that you would need to {analysis_type}. 
       Note the first row is the column headers, the second row is a description of each column and the rest is a small sample from real data. 
       
         INPUTS:
         1. Business Context:
           - Business Model: {business_model}
           - Value Proposition: {value_proposition}
-          - Business Goal: {business_goal}
+          {business_goal_section}
+          {questions_section}
         
         2. Sample Data and Structure:
           - Sample Data: {sample_data}
           - Data Types: {data_types}
 
       2. Return an analysis plan that focuses on key metrics and their relationships. The analysis plan can include (but not limited to) patterns, trends, correlations, co-factors impacting performance results and any other advanced analytics required.
-         Include 25 relevant metrics on which you'll base your actionable recommendations.
+         Include 15 relevant metrics on which you'll base your actionable recommendations.
          The analysis plan should be in the following JSON format:
         {{
           "metrics": [

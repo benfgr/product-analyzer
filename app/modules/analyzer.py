@@ -40,37 +40,35 @@ class CodeValidator:
     @classmethod
     def _clean_complex_expressions(cls, code: str) -> str:
         """Clean up complex expressions and add safety handlers"""
-        # Handle groupby operations with type conversion
-        if 'groupby' in code and 'astype' in code:
-            # Pattern: Handle type conversion after groupby aggregation
-            if 'sum()' in code:
-                code = code.replace('.astype(int).sum()', '.sum()')
-            elif 'mean()' in code:
-                code = code.replace('.astype(int).mean()', '.mean()')
         
-        # Handle division operations with groupby
-        if 'groupby' in code and '/' in code:
-            parts = code.split('=')
-            if len(parts) == 2:
-                var_name = parts[0].strip()
-                expression = parts[1].strip()
+        # Handle groupby operations
+        if 'groupby' in code:
+            # If using apply with lambda for calculations
+            if 'apply' in code and 'lambda' in code:
+                # Remove any type conversions inside aggregations
+                code = code.replace('.astype(int)', '').replace('.astype(float)', '')
                 
-                # If it's a division of two groupby operations
-                if expression.count('groupby') == 2:
-                    numerator = expression.split('/')[0].strip()
-                    denominator = expression.split('/')[1].strip()
-                    code = f"{var_name} = safe_divide({numerator}, {denominator})"
+                # If it's a division operation
+                if '/' in code:
+                    # Convert from complex lambda to simple aggregation
+                    start = code.split('.groupby(')[0]
+                    group_by = code.split('.groupby(')[1].split(')')[0]
+                    columns = []
+                    
+                    # Extract column names from the lambda
+                    for col in code.split("x['")[1:]:
+                        col_name = col.split("']")[0]
+                        if col_name not in columns:
+                            columns.append(col_name)
+                    
+                    # Rebuild as a simple aggregation
+                    code = f"{start}.groupby({group_by}).agg({{"
+                    code += ", ".join(f"'{col}': 'sum'" for col in columns)
+                    code += "})"
         
-        # Handle media type comparisons
-        if 'str.contains' in code and 'WIDGET_MEDIA_TYPES' in code:
-            code = code.replace(
-                "df[df['WIDGET_MEDIA_TYPES'].str.contains",
-                "df[safe_contains(df['WIDGET_MEDIA_TYPES']"
-            )
-        
-        # Handle default values for undefined variables
-        if 'conversion_rate_estimate' in code:
-            code = 'conversion_rate_estimate = 0.1  # Default conversion rate\n' + code
+        # Clean up any remaining string operations
+        if 'str.contains' in code:
+            code = code.replace('.str.contains', '.pipe(safe_contains')
         
         return code
 
@@ -238,12 +236,28 @@ class AnalyticsEngine:
             }
             
             # 4. Get analysis strategy with enhanced context
+
+                # Determine analysis type and purpose
+            if questions:
+                analysis_type = "answer your specific questions"
+                analysis_purpose = "answer the provided questions"
+                business_goal_section = ""
+                questions_section = f"- Questions to Answer: {questions}"
+            else:
+                analysis_type = "recommend actionable insights"
+                analysis_purpose = "support strategic recommendations"
+                business_goal_section = f"- Business Goal: {business_goal}"
+                questions_section = ""
+
             print("\n4. Get analysis strategy with enhanced context")            
             prompt = prompts['dynamic_analysis']['schema_understanding']['user_template'].format(
-                business_model=business_model,
-                value_proposition=value_proposition,
-                business_goal=business_goal,
-                **data_context
+            business_model=business_model,
+            value_proposition=value_proposition,
+            analysis_type=analysis_type,
+            analysis_purpose=analysis_purpose,
+            business_goal_section=business_goal_section,
+            questions_section=questions_section,
+            **data_context
             )
 
             print("\n=== ANALYSIS PLAN REQUEST ===")
